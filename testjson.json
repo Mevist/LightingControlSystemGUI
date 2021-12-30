@@ -1,0 +1,1 @@
+[{"Name": "test1", "Address": "50", "Level": 0, "Pulse": false, "Blink": false, "Active": false, "PulseD": 30, "PulseS": 1, "BlinkD": 5, "FuncD": 0}, {"Name": "test123", "Address": 123, "Level": 0, "Pulse": false, "Blink": false, "Active": false, "PulseD": 30, "PulseS": 1, "BlinkD": 5, "FuncD": 0}]
