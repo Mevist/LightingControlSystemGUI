@@ -2,6 +2,7 @@ from tkinter import *
 from dataclasses import dataclass
 from PIL import ImageTk, Image
 from functools import partial
+import time
 import threading
 
 save_bool = False
@@ -9,11 +10,19 @@ accept_bool = False
 load_bool = False
 power = False
 save_settings = False
+fnc = False;
 
 
 def getPower():
     return power
 
+def getLoad(): return load_bool
+
+
+def checkifsendFnc():
+    global fnc
+    fnc = True
+    return fnc
 
 def checkifaccepted():
     global accept_bool
@@ -35,13 +44,14 @@ def checkifloaded():
 def checkifsettingsaved():
     global save_settings
     save_settings = True
-    return load_bool
+    return save_settings
 
 
 class LampView:
     def __init__(self, root, root_buttons, settings, calculate):
         global save_bool, accept_bool, power, save_settings
         self.settings = settings
+        self.settings.readSettings()
         self.calculate = calculate
         self.root = root
         self.root_buttons = root_buttons
@@ -85,6 +95,8 @@ class LampView:
                                command=partial(self.settings.sendThrotle, self.lamp_list))
         self.send_btn.grid(row=1, column=0, padx=50, pady=10)
 
+        self.sendthread = threading.Thread(target=self.settings.sendThrotle, args=[self.lamp_list])
+
         self.send_fnc = Button(self.buttons_left, text="SEND FNC",
                                command=partial(self.settings.sendFnc, self.lamp_list))
         self.send_fnc.grid(row=2, column=0, padx=50, pady=(10, 25))
@@ -109,6 +121,14 @@ class LampView:
         self.contMode()
         self.update()
 
+    def power_check_noevent(self):
+        global power
+        if power == False:
+            self.power_btn.config(image=self.power_img_off)
+
+        elif power:
+            self.power_btn.config(image=self.power_img_on)
+
     def power_check(self, event):
         global power
         if power == 0:
@@ -119,13 +139,15 @@ class LampView:
             power = False
             self.power_btn.config(image=self.power_img_off)
 
+        self.settings.sendPowerCmd()
+
     def createView(self):
         i = 0
         j = 0
         self.settings.readSettings()
         self.lamp_list = []
         self.btn_list = []
-        if len(self.settings.json_list) == 0 or self.delete_bool:
+        if len(self.settings.json_list) == 0 or self.delete_bool or getLoad():
             for widget in self.root.winfo_children():
                 widget.destroy()
                 self.btn_list = []
@@ -167,8 +189,26 @@ class LampView:
             self.settings.readSettings()
             save_settings = False
 
+    def sendThreadThrottle(self,t):
+        if not(t.is_alive()):
+            t.start()
+            t.join()
+            #time.sleep(0.1)
+        else:
+            pass
+
+    def sendThreadFnc(self,t):
+        if not(t.is_alive()):
+            t.start()
+           # t.join()
+            #time.sleep(0.1)
+        else:
+            pass
+
     def update(self):
-        global power
+        global power,fnc
+    #    self.cleanthreads()
+    #    self.power_check_noevent()
         self.checkIfChange()
         self.setLampValues()
         if power:
@@ -177,36 +217,40 @@ class LampView:
                                 self.active_mode))
             if accept_bool:
                 self.editList()
-            self.send_btn.config(command=partial(self.settings.sendThrotle, self.lamp_list))
-            self.send_fnc.config(command=self.setThread)
-            self.threads
+            if fnc:
+                t2 =  threading.Thread(target=self.settings.sendFnc, args=[self.lamp_list],daemon=True)
+                self.send_btn.config(command=partial(self.settings.sendThrotle, self.lamp_list))
+                self.send_fnc.config(command=partial(self.sendThreadFnc,t2))
+                fnc = False
             if self.active_mode == 0:
-                t = threading.Thread(target=self.settings.sendThrotle, args=[self.lamp_list])
-                self.threads.append(t)
-                t.start()
-            #  t.join()
-
+                t =  threading.Thread(target=self.settings.sendThrotle, args=[self.lamp_list],daemon=True)
+                self.sendThreadThrottle(t)
+                print(threading.active_count())
+                # t = threading.Thread(target=self.settings.sendThrotle, args=[self.lamp_list])
+                #self.threads.append(t)
+        #print(threading.active_count())
         self.root.after(100, self.update)
 
-    def setThread(self):
-        t = threading.Thread(target=self.settings.sendFnc, args=[self.program_list])
-        self.threads.append(t)
-        t.start()
+    # def setThread(self,t):
+    #     t = threading.Thread(target=self.settings.sendFnc, args=[self.program_list])
+    #     t.start()
 
     def jsonToClassList(self, json_fnc):
         i = 0
+        self.settings.json_list = json_fnc
+        self.createView()
         for obj in json_fnc:
             lamp_obj = Light(obj["Name"], obj["Address"], obj["Level"], obj["Pulse"], obj["Blink"], obj["Active"],
                              obj["PulseD"], obj["PulseS"], obj["BlinkD"], obj["FuncD"])
             self.program_list[i] = lamp_obj
             i += 1
 
-    def cleanthreads(self):
-        if self.active_mode and (len(self.threads) > 0):
-            for thread in self.threads:
-                thread.terminate()
-        else:
-            pass
+    # def cleanthreads(self):
+    #     if self.active_mode and (len(self.threads) > 0):
+    #         for thread in self.threads:
+    #             thread.terminate()
+    #     else:
+    #         pass
 
     def onClick(self, event):
         for obj in self.lamp_list:
@@ -284,10 +328,8 @@ class LampView:
 
     def setLampValues(self):
         for obj in self.lamp_list:
-            # print(obj.Level)
             if obj.Active:
                 obj.Level = self.calculate.giveValue(1)
-        # print("--------------")
 
     def progMode(self):
         self.clearActives()
@@ -334,7 +376,11 @@ class LampView:
                 lamp.Blink = False
                 lamp.PulseD = self.calculate.givePDvalue()
                 lamp.PulseS = self.calculate.givePSvalue()
-            # lamp.FuncD =  self.calculate.giveFDvalue()
+                if (self.calculate.giveFDvalue() == "setdef"):
+                    lamp.FuncD = 0
+                    pass
+                else:
+                    lamp.FuncD = self.calculate.giveFDvalue()
             elif self.calculate.getBlinkMode():
                 lamp.Blink = True
                 lamp.Pulse = False

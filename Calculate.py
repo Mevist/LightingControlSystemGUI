@@ -50,16 +50,17 @@ class Calculate:
         self.fnc_label = Label(self.root,text="Insert function delay")
         self.fnc_label.grid(row=4, column=0, pady=10)
 
-        self.acceptBtn = Button(self.root, text="Okejka", command = self.accept)
+        self.acceptBtn = Button(self.root, text="Accept", command = self.accept)
         self.acceptBtn.grid(row = 5, column=1)
 
         test_str = "0 | - | - | - | 25 | - | - | - | 50 | - | - | - | 75 | - | - | - | 100 "
         self.my_label = Label(self.root, text=test_str)
         self.my_label.grid(row=6, column=0, columnspan=2, padx=25,pady=(25,5))
 
-        self.level = Scale(self.root, from_=0, to=126,showvalue=0, orient=HORIZONTAL,length = 250, command=self.giveValue)
+        self.level = Scale(self.root, from_=0, to=253,showvalue=0, orient=HORIZONTAL,length = 250, command=self.giveValue)
         self.bigroot.bind("<MouseWheel>",self.mouseWheel)
         self.level.grid(row=7,column=0,columnspan=2,padx=25,pady=(5,5))
+        self.level.set(0)
 
     def accept(self):
         if (self.pulse_m.get()) or (self.blink_m.get()):

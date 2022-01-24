@@ -5,7 +5,7 @@ from tkinter import *
 import json
 import os
 import serial
-from time import sleep
+import time
 from LampView import *
 
 
@@ -14,21 +14,33 @@ from LampView import *
 class Settings:
     filename: str = "testjson.json"
     ip: str = "192.168.1.1"
-    port : str = 'COM5'
+    port : str = 'COM7'
     baudrate: int = 115200
-    timeout: float = .15
+    timeout: float = .1
     fnc_dir: str = os.getcwd()
 
 
     json_list = []
     json_file = 0
-
     json_fnc = []
-    arduino = serial.Serial(port,baudrate=baudrate,timeout=timeout)
+
+    port_flag = False
+    arduino = serial.Serial(port,baudrate,timeout = timeout,write_timeout=5)
 
     def getProgramList(self):
         self.loadFunction(self.fnc_dir)
         return self.json_fnc
+
+    def connecToPort(self):
+        try:
+            self.arduino.port = self.port
+            self.arduino.baudrate = self.baudrate
+            self.arduino.timeout = self.timeout
+            self.arduino.open()
+        except Exception as e:
+            print(e)
+            messagebox.showinfo("Error","Invalid port")
+            self.port_flag = True
 
     def loadFunction(self,filedir):
         if filedir != "":
@@ -41,39 +53,86 @@ class Settings:
             checkifloaded()
 
     def sendPowerCmd(self):
-        self.arduino.write(bytes("<1>", 'utf-8'))
+        # if not self.arduino.isOpen():
+        #     self.connecToPort()
+
+        if getPower():
+            self.arduino.write(bytes("<1>", 'utf-8'))
+        elif getPower() == False:
+            self.arduino.write(bytes("<->",'utf-8'))
+            self.arduino.write(bytes("<0>",'utf-8'))
 
     def sendThrotle(self,lamp_list):
+        # if not self.port_flag:
+        #     if not self.arduino.isOpen():
+        #         self.connecToPort()
+
         if getPower():
-            i=0
-            for obj in lamp_list:
-                cmd = "<t " + str(i) + " " + str(obj.Address) + " " + str(obj.Level) + " 1 >"
-                i+=1
-                self.arduino.write(bytes(cmd, 'utf-8'))
+                i=0
+                for obj in lamp_list:
+                    templevel = str(self.convertLevel(obj.Level))
+                    tempdir = str(self.checkLevel(obj.Level))
+                    cmd = "<t 1 " + str(obj.Address) + " " + templevel + " " + tempdir + ">"
+                    i+=1
+                    self.arduino.flushInput()
+                    self.arduino.flushOutput()
+                    self.arduino.write(bytes(cmd, 'utf-8'))
+                    time.sleep(0.01)
 
     def sendCmd(self,lamp_list):
+        # if not self.arduino.isOpen():
+        #     self.connecToPort()
+
         if getPower():
+            for x in range(1,3):
+                self.arduino.write(bytes("<->", 'utf-8'))
             for obj in lamp_list:
+                self.arduino.flushInput()
+                self.arduino.flushOutput()
                 if obj.Pulse:
                     cmd_conf = "<w " + str(obj.Address) + " 113 " + str(obj.PulseD) + ">"
                     self.arduino.write(bytes(cmd_conf, 'utf-8'))
                     cmd_conf2 = "<w " + str(obj.Address) + " 114 " + str(obj.PulseS) + ">"
+                    self.arduino.flushInput()
+                    self.arduino.flushOutput()
                     self.arduino.write(bytes(cmd_conf2, 'utf-8'))
                 elif obj.Blink:
                     cmd_conf = "<w " + str(obj.Address) + " 115 " + str(obj.BlinkD) + ">"
                     self.arduino.write(bytes(cmd_conf, 'utf-8'))
 
     def sendFnc(self,lamp_list):
+        # if not self.arduino.isOpen():
+        #     self.connecToPort()
+        checkifsendFnc()
         if getPower():
             self.sendCmd(lamp_list)
             for obj in reversed(lamp_list):
-                sleep(obj.FuncD)
-                if obj.Pulse:
+                time.sleep(obj.FuncD)
+                self.arduino.flushInput()
+                self.arduino.flushOutput()
+                if  obj.Pulse:
                     cmd = "<F " + str(obj.Address) + " 1 1>"
                     self.arduino.write(bytes(cmd, 'utf-8'))
                 elif obj.Blink:
                     cmd = "<F " + str(obj.Address) + " 2 1>"
                     self.arduino.write(bytes(cmd, 'utf-8'))
+                else:
+                    templevel = str(self.convertLevel(obj.Level))
+                    tempdir = str(self.checkLevel(obj.Level))
+                    cmd = "<t 1 " + str(obj.Address) + " " + templevel + " " + tempdir +">"
+                    self.arduino.write(bytes(cmd, 'utf-8'))
+
+    def convertLevel(self,obj_level):
+        if 0 <= obj_level <= 126:
+            return obj_level
+        elif 126 < obj_level <= 253:
+            return obj_level - 127
+
+    def checkLevel(self,obj_level):
+        if  0 <= obj_level <= 126:
+            return 0
+        elif 126 < obj_level <= 253:
+            return 1
 
     def sendAddrConfig(self,old_adr,new_adr):
         cmd = f'<w {old_adr} 1 {new_adr} >'
@@ -101,6 +160,7 @@ class Settings:
         else:
             self.saveToFileActive(lamp_list)
 
+
     def saveSettings(self,e_filename,e_comports,e_baudrate,e_ipaddress):
         json_obj = {"File name" : e_filename,
                     "COM port" : e_comports,
@@ -110,6 +170,8 @@ class Settings:
             y=json.dumps(json_obj)
             f.write(y)
         self.readSettings()
+        self.port_flag = True
+        self.connecToPort()
         checkifsettingsaved()
 
     def readSettings(self):
@@ -131,15 +193,18 @@ class Settings:
             print(e)
 
     def readFileToList(self):
-        try:
-            with open(self.filename, 'r') as f:
-                json_temp = json.loads(f.read())
-                self.json_file = json_temp
-                self.json_list = json_temp
-        except Exception as e:
-            print(e)
-            f = open(self.filename, 'w')
-            f.close()
+        if getLoad():
+            self.json_file = self.json_file
+        else:
+            try:
+                with open(self.filename, 'r') as f:
+                    json_temp = json.loads(f.read())
+                    self.json_file = json_temp
+                    self.json_list = json_temp
+            except Exception as e:
+                print(e)
+                f = open(self.filename, 'w')
+                f.close()
 
     def saveToFileReduced(self,lamp_list):
         temp_array = []
@@ -159,6 +224,7 @@ class Settings:
             y = json.dumps(temp_array)
             f.write(y)
         checkifsaved()
+
 
     def saveToFileActive(self,lamp_list):
         with open(self.filename) as f:

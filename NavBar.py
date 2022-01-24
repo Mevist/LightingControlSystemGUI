@@ -30,7 +30,8 @@ class NavBar:
 
     def uptade_settings_entries(self):
         temp_fn = self.e_filename.get()
-        temp_comport = self.e_comports.get()
+        temp_str = self.e_comports.get().split()
+        temp_comport = temp_str[0]
         temp_baudrate = self.e_baudrate.get()
         temp_ip = self.e_ipaddress.get()
         self.settings.saveSettings(temp_fn,temp_comport,temp_baudrate,temp_ip)
@@ -88,13 +89,13 @@ class NavBar:
         self.top.title("Load Function")
         self.e_fncfile = Entry(self.top, width=30)
         self.e_fncfile.grid(row=0, column=1)
-        self.label = Label(self.top, text="File name: ").grid(row=0, column=0)
+        self.label = Label(self.top, text="File name: ").grid(row=0, column=0,padx=5,pady=5)
 
         self.dir_btn = Button(self.top, text="...", width=2, height=1, command=self.choose_path)
-        self.dir_btn.grid(row=0, column=2)
+        self.dir_btn.grid(row=0, column=2,padx=5,pady=5)
 
         self.load_btn = Button(self.top, text="LOAD", command=partial(self.settings.loadFunction, self.file_fnc_name))
-        self.load_btn.grid(row=1, column=0)
+        self.load_btn.grid(row=1, column=0,padx=10,pady=10)
 
     def choose_path(self):
         self.file_fnc_name = filedialog.askopenfilename(initialdir=self.settings.fnc_dir,
@@ -112,7 +113,6 @@ class NavBar:
         self.top.attributes('-topmost', 'true')
         self.e_address = Entry(self.top, width=30)
         self.e_name = Entry(self.top, width=30)
-        self.temp = Entry(self.top, width=30)
         self.top.title("Add light")
 
         label_name = Label(self.top, text="Name:  ").grid(row=0, column=0, padx=10, pady=10)
@@ -121,10 +121,7 @@ class NavBar:
         label_address = Label(self.top, text="Address:  ").grid(row=1, column=0, padx=10, pady=10)
         self.e_address.grid(row=1, column=1, padx=10, pady=10)
 
-        label_temp = Label(self.top, text="Temp:  ").grid(row=2, column=0, padx=10, pady=10)
-        self.temp.grid(row=2, column=1, padx=10, pady=10)
-
         self.save_btn = Button(self.top, text="SAVE",
                                command=partial(self.settings.saveToFile, self.e_name, self.e_address)).grid(row=3,column=0,padx=10,pady=10)
-        self.read_btn = Button(self.top, text="READ", command=self.settings.readFile).grid(row=3, column=1, padx=10,pady=10)
+        # self.read_btn = Button(self.top, text="READ", command=self.settings.readFile).grid(row=3, column=1, padx=10,pady=10)
         self.delete_btn = Button(self.top, text="DELETE", command=self.settings.deleteFile).grid(row=3, column=2,padx=10,pady=10)

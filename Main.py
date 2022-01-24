@@ -8,7 +8,7 @@ from Calculate import *
 class MyTkWindow:
     def __init__(self):
         self.root = Tk()  # Makes the window
-        self.root.wm_title("Window Title")  # Makes the title that will appear in the top left
+        self.root.wm_title("POL")  # Makes the title that will appear in the top left
         self.root.config(background="#FFFFFF")
         self.settings_obj = Settings()
 
