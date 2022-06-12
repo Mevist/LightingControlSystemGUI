@@ -120,7 +120,7 @@ class LampView:
         self.rightClickMenuConfig()
         self.contMode()
         self.update()
-
+#
     def power_check_noevent(self):
         global power
         if power == False:

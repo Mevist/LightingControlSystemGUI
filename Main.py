@@ -4,7 +4,7 @@ from Settings import *
 from LampView import *
 from Calculate import *
 
-
+#
 class MyTkWindow:
     def __init__(self):
         self.root = Tk()  # Makes the window

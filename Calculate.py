@@ -26,7 +26,7 @@ class Calculate:
         self.pulse_step.bind('<FocusOut>', self.onFocusout)
         self.pulse_step.config(fg='grey', justify='center')
         self.pulse_step.grid(row=1, column=1,pady=10)
-
+#
         self.blink_m = BooleanVar()
         self.blink_btn = Checkbutton(self.root, text="Blink", variable=self.blink_m, onvalue=True, offvalue=False,
                                      command=self.setBlinkMode)

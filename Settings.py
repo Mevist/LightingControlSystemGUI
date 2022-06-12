@@ -224,7 +224,7 @@ class Settings:
             y = json.dumps(temp_array)
             f.write(y)
         checkifsaved()
-
+    #
 
     def saveToFileActive(self,lamp_list):
         with open(self.filename) as f:

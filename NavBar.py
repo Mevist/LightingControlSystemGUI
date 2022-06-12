@@ -4,7 +4,7 @@ import tkinter.ttk as ttk
 
 import serial.tools.list_ports
 from tkinter import filedialog
-
+#
 
 class NavBar:
     def __init__(self, root, settings):
