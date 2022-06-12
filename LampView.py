@@ -79,15 +79,15 @@ class LampView:
 
         save_bool = True
 
-        img_power_off = Image.open("redpower2.png")
+        img_power_off = Image.open("redpoweer2.png")
         resized_power_off = img_power_off.resize((100, 100), Image.ANTIALIAS)
         self.power_img_off = ImageTk.PhotoImage(resized_power_off)
 
-        img_power_on = Image.open("greenpower2.png")
+        img_power_on = Image.open("greenpoweer2.png")
         resized_power_on = img_power_on.resize((100, 100), Image.ANTIALIAS)
         self.power_img_on = ImageTk.PhotoImage(resized_power_on)
 
-        img_temp = Image.open("light_bulb.png")
+        img_temp = Image.open("light_bbulb.png")
         resized_img = img_temp.resize((50, 50), Image.ANTIALIAS)
         self.lamp_img = ImageTk.PhotoImage(resized_img)
 
